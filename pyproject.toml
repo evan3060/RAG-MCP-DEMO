@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-mcp-demo"
+version = "0.1.0"
+description = "RAG-based knowledge base system with MCP protocol support"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Developer", email = "dev@example.com"}
+]
+keywords = ["rag", "mcp", "llamaindex", "knowledge-base"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "llama-index>=0.12.0",
+    "llama-index-vector-stores-chroma>=0.4.0",
+    "chromadb>=0.6.0",
+    "mcp>=1.0.0",
+    "qianfan>=0.4.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+office = [
+    "python-docx>=0.8.11",
+    "openpyxl>=3.0.0",
+    "xlrd>=2.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+eval = [
+    "ragas>=0.2.0",
+    "datasets>=2.0.0",
+]
+
+[project.scripts]
+rag-mcp-server = "src.mcp_server.server:main"
