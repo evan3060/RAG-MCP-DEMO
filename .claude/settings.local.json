@@ -4,7 +4,13 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git init *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(echo \"test\")",
+      "Read(//tmp/**)",
+      "Bash(python *)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m pytest tests/unit/test_config.py -v)",
+      "Bash(pip install *)"
     ]
   }
 }
