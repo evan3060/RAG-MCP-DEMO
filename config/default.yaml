@@ -1,0 +1,81 @@
+# ==================== 服务配置 ====================
+server:
+  mode: stdio
+  host: "0.0.0.0"
+  port: 8000
+
+# ==================== LLM 配置 ====================
+llm:
+  provider: qianfan
+  qianfan:
+    api_key: "${QIANFAN_API_KEY}"
+    secret_key: "${QIANFAN_SECRET_KEY}"
+    model: "ERNIE-Bot-4"
+    temperature: 0.7
+    max_tokens: 2048
+
+# ==================== 嵌入模型配置 ====================
+embedding:
+  provider: siliconflow
+  siliconflow:
+    api_key: "${SILICONFLOW_API_KEY}"
+    model: "BAAI/bge-large-zh-v1.5"
+
+# ==================== 向量数据库配置 ====================
+vector_store:
+  provider: chroma
+  chroma:
+    persist_directory: "./data/chroma_db"
+    collection_name: "knowledge_base"
+    distance_fn: "cosine"
+
+# ==================== 检索配置 ====================
+retrieval:
+  strategy: hybrid
+  top_k: 10
+  hybrid:
+    vector_weight: 0.7
+    bm25_weight: 0.3
+    fusion_mode: rrf
+
+# ==================== 重排序配置 ====================
+reranker:
+  enabled: true
+  siliconflow:
+    api_key: "${SILICONFLOW_API_KEY}"
+    model: "BAAI/bge-reranker-v2-m3"
+    top_n: 5
+
+# ==================== 文档处理配置 ====================
+ingestion:
+  supported_extensions: [".txt", ".md", ".pdf", ".docx", ".xlsx", ".xls"]
+  splitter:
+    strategy: semantic
+    semantic:
+      buffer_size: 1
+      breakpoint_percentile_threshold: 95
+    recursive:
+      chunk_size: 512
+      chunk_overlap: 50
+  office:
+    excel:
+      max_rows_per_sheet: 10000
+      date_format: "%Y-%m-%d"
+    word:
+      extract_tables: true
+      include_headers: false
+
+# ==================== 评估配置 ====================
+evaluation:
+  enabled: true
+  metrics:
+    - faithfulness
+    - answer_relevancy
+    - context_precision
+    - context_recall
+
+# ==================== 日志配置 ====================
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/rag-mcp.log"
