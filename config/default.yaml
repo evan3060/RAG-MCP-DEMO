@@ -18,6 +18,15 @@ llm:
     model: "${LLM_MODEL:-ERNIE-Bot-4}"
     temperature: 0.7
     max_tokens: 2048
+  siliconflow:
+    # SiliconFlow API 配置
+    # 控制台: https://cloud.siliconflow.cn
+    api_key: "${LLM_API_KEY}"
+    # 可选: 自定义 base_url
+    base_url: "${LLM_BASE_URL:-https://api.siliconflow.cn/v1}"
+    # 模型列表: https://siliconflow.cn/models
+    model: "${LLM_MODEL:-deepseek-ai/DeepSeek-V3}"
+    temperature: 0.7
 
 # ==================== 嵌入模型配置 ====================
 embedding:

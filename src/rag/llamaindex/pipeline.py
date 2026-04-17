@@ -18,6 +18,7 @@ from src.rag.components.embedders.siliconflow_embedder import SiliconFlowEmbedde
 from src.rag.components.vector_stores.chroma_store import ChromaVectorStore
 from src.rag.components.rerankers.siliconflow_reranker import SiliconFlowReranker
 from src.rag.components.llms.qianfan_llm import QianfanLLM
+from src.rag.components.llms.siliconflow_llm import SiliconFlowLLM
 from src.rag.llamaindex.hybrid_retriever import HybridRetriever
 
 
@@ -31,16 +32,37 @@ class RAGPipeline:
 
     def _configure_settings(self):
         """配置 LlamaIndex 全局设置"""
-        Settings.embed_model = SiliconFlowEmbedder({
-            "api_key": self.config["siliconflow_api_key"],
-            "model": "BAAI/bge-large-zh-v1.5"
-        })
+        llm_config = self.config.get("llm", {})
+        llm_provider = llm_config.get("provider", "qianfan")
 
-        Settings.llm = QianfanLLM({
-            "api_key": self.config["qianfan_api_key"],
-            "secret_key": self.config.get("qianfan_secret_key"),
-            "model": "ERNIE-Bot-4"
-        })
+        embedding_config = self.config.get("embedding", {})
+        embed_provider = embedding_config.get("provider", "siliconflow")
+
+        # 配置嵌入模型
+        if embed_provider == "siliconflow":
+            sf_config = embedding_config.get("siliconflow", {})
+            Settings.embed_model = SiliconFlowEmbedder({
+                "api_key": sf_config.get("api_key"),
+                "model": sf_config.get("model", "BAAI/bge-large-zh-v1.5"),
+                "base_url": sf_config.get("base_url")
+            })
+
+        # 配置 LLM
+        if llm_provider == "qianfan":
+            qf_config = llm_config.get("qianfan", {})
+            Settings.llm = QianfanLLM({
+                "api_key": qf_config.get("api_key"),
+                "secret_key": qf_config.get("secret_key"),
+                "model": qf_config.get("model", "ERNIE-Bot-4"),
+                "base_url": qf_config.get("base_url")
+            })
+        elif llm_provider == "siliconflow":
+            sf_config = llm_config.get("siliconflow", {})
+            Settings.llm = SiliconFlowLLM({
+                "api_key": sf_config.get("api_key"),
+                "model": sf_config.get("model", "deepseek-ai/DeepSeek-V3"),
+                "base_url": sf_config.get("base_url")
+            })
 
     async def build_index(self, documents_path: str) -> VectorStoreIndex:
         """构建知识库索引"""
