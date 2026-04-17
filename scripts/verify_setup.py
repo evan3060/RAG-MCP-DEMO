@@ -80,10 +80,9 @@ def check_env_file():
 
     # 检查必需的配置（新的统一命名格式）
     required_vars = [
-        "LLM_API_KEY",
-        "LLM_SECRET_KEY",
-        "EMBEDDING_API_KEY",
-        "RERANKER_API_KEY",
+        "LLM_API_KEY",       # LLM 必需（可单独使用，或与 LLM_SECRET_KEY 一起）
+        "EMBEDDING_API_KEY", # 嵌入模型必需
+        "RERANKER_API_KEY",  # 重排序必需
     ]
 
     missing = []

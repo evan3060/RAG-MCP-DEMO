@@ -39,7 +39,12 @@ class QianfanLLM(BaseLLM):
     """
 
     def __init__(self, config: dict):
-        """初始化千帆 LLM"""
+        """初始化千帆 LLM
+
+        【认证方式】
+        1. API Key 方式（推荐，Coding Plan 使用）: 只提供 api_key
+        2. AK/SK 方式（标准方式）: 提供 api_key + secret_key
+        """
         self.api_key = config.get("api_key")
         self.secret_key = config.get("secret_key")
         self.model_name = config.get("model", "ERNIE-Bot-4")
@@ -54,16 +59,25 @@ class QianfanLLM(BaseLLM):
             import os
             os.environ["QIANFAN_BASE_URL"] = self.base_url
 
-        self.client = qianfan.ChatCompletion(
-            ak=self.api_key,
-            sk=self.secret_key
-        )
+        # 根据认证方式初始化客户端
+        if self.secret_key:
+            # AK/SK 方式
+            self.client = qianfan.ChatCompletion(
+                ak=self.api_key,
+                sk=self.secret_key
+            )
+        else:
+            # API Key 方式（Coding Plan 代理常用）
+            self.client = qianfan.ChatCompletion(
+                access_token=self.api_key
+            )
 
     def _validate_config(self) -> None:
         """验证配置"""
-        if not self.api_key or not self.secret_key:
+        if not self.api_key:
             raise ValueError(
-                "千帆 LLM 需要提供 api_key 和 secret_key"
+                "千帆 LLM 需要提供 api_key "
+                "（或同时提供 api_key 和 secret_key）"
             )
 
     async def generate(
