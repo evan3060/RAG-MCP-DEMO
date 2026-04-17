@@ -10,7 +10,13 @@
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
+### 2. 验证安装
+
+```bash
+python scripts/verify_setup.py
+```
+
+### 3. 配置环境变量
 
 ```bash
 export QIANFAN_API_KEY="your-key"
