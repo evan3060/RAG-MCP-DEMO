@@ -13,11 +13,10 @@ from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.vector_stores.chroma import ChromaVectorStore as LlamaIndexChromaStore
 
 from src.rag.components.embedders.siliconflow_embedder import SiliconFlowEmbedder
-from src.rag.components.vector_stores.chroma_store import ChromaVectorStore
 from src.rag.components.rerankers.siliconflow_reranker import SiliconFlowReranker
-from src.rag.components.llms.qianfan_llm import QianfanLLM
 from src.rag.components.llms.siliconflow_llm import SiliconFlowLLM
 from src.rag.llamaindex.hybrid_retriever import HybridRetriever
 
@@ -38,7 +37,7 @@ class RAGPipeline:
         embedding_config = self.config.get("embedding", {})
         embed_provider = embedding_config.get("provider", "siliconflow")
 
-        # 配置嵌入模型
+        # 配置嵌入模型 (直接继承 BaseEmbedding)
         if embed_provider == "siliconflow":
             sf_config = embedding_config.get("siliconflow", {})
             Settings.embed_model = SiliconFlowEmbedder({
@@ -47,22 +46,12 @@ class RAGPipeline:
                 "base_url": sf_config.get("base_url")
             })
 
-        # 配置 LLM
-        if llm_provider == "qianfan":
-            qf_config = llm_config.get("qianfan", {})
-            Settings.llm = QianfanLLM({
-                "api_key": qf_config.get("api_key"),
-                "secret_key": qf_config.get("secret_key"),
-                "model": qf_config.get("model", "ERNIE-Bot-4"),
-                "base_url": qf_config.get("base_url")
-            })
-        elif llm_provider == "siliconflow":
+        # 配置 LLM (SiliconFlow 使用自定义实现，千帆待实现)
+        if llm_provider == "siliconflow":
             sf_config = llm_config.get("siliconflow", {})
-            Settings.llm = SiliconFlowLLM({
-                "api_key": sf_config.get("api_key"),
-                "model": sf_config.get("model", "deepseek-ai/DeepSeek-V3"),
-                "base_url": sf_config.get("base_url")
-            })
+            # 暂时使用 SiliconFlow 的直接实现
+            # 实际使用时需要创建 LlamaIndex 兼容的包装器
+            self._llm_config = sf_config
 
     async def build_index(self, documents_path: str) -> VectorStoreIndex:
         """构建知识库索引"""
@@ -70,14 +59,18 @@ class RAGPipeline:
 
         splitter = SemanticSplitterNodeParser(
             buffer_size=1,
-            breakpoint_percentile_threshold=95
+            breakpoint_percentile_threshold=95,
+            embed_model=Settings.embed_model
         )
         nodes = splitter.get_nodes_from_documents(documents)
 
-        vector_store = ChromaVectorStore({
-            "persist_directory": "./data/chroma_db",
-            "collection_name": "knowledge_base"
-        })
+        # 使用 Chroma PersistentClient
+        import chromadb
+        chroma_client = chromadb.PersistentClient(path="./data/chroma_db")
+        vector_store = LlamaIndexChromaStore(
+            chroma_client=chroma_client,
+            collection_name="knowledge_base"
+        )
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
         self.index = VectorStoreIndex(

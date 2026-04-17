@@ -12,6 +12,15 @@ from pathlib import Path
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# 启用嵌套事件循环（用于 LlamaIndex 同步接口）
+import nest_asyncio
+nest_asyncio.apply()
+
+# 加载环境变量（从项目根目录）
+from dotenv import load_dotenv
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
 from src.rag.llamaindex.pipeline import RAGPipeline
 from src.utils.config import load_config
 
