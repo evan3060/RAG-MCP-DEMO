@@ -18,6 +18,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore as LlamaIndexChro
 from src.rag.components.embedders.siliconflow_embedder import SiliconFlowEmbedder
 from src.rag.components.rerankers.siliconflow_reranker import SiliconFlowReranker
 from src.rag.components.llms.siliconflow_llm import SiliconFlowLLM
+from src.rag.components.llms.llama_index_adapter import LlamaIndexLLMAdapter
 from src.rag.llamaindex.hybrid_retriever import HybridRetriever
 
 
@@ -46,12 +47,16 @@ class RAGPipeline:
                 "base_url": sf_config.get("base_url")
             })
 
-        # 配置 LLM (SiliconFlow 使用自定义实现，千帆待实现)
+        # 配置 LLM (SiliconFlow 使用 LlamaIndex 适配器)
         if llm_provider == "siliconflow":
             sf_config = llm_config.get("siliconflow", {})
-            # 暂时使用 SiliconFlow 的直接实现
-            # 实际使用时需要创建 LlamaIndex 兼容的包装器
-            self._llm_config = sf_config
+            llm = SiliconFlowLLM({
+                "api_key": sf_config.get("api_key"),
+                "model": sf_config.get("model", "deepseek-ai/DeepSeek-V3"),
+                "base_url": sf_config.get("base_url"),
+                "temperature": sf_config.get("temperature", 0.7)
+            })
+            Settings.llm = LlamaIndexLLMAdapter(llm)
 
     async def build_index(self, documents_path: str) -> VectorStoreIndex:
         """构建知识库索引"""
@@ -64,19 +69,9 @@ class RAGPipeline:
         )
         nodes = splitter.get_nodes_from_documents(documents)
 
-        # 使用 Chroma PersistentClient
-        import chromadb
-        chroma_client = chromadb.PersistentClient(path="./data/chroma_db")
-        vector_store = LlamaIndexChromaStore(
-            chroma_client=chroma_client,
-            collection_name="knowledge_base"
-        )
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-        self.index = VectorStoreIndex(
-            nodes=nodes,
-            storage_context=storage_context
-        )
+        # 使用内存索引（简化测试）
+        # TODO: 后续添加 Chroma 持久化存储
+        self.index = VectorStoreIndex(nodes=nodes)
 
         return self.index
 

@@ -13,6 +13,7 @@ from llama_index.core.llms import (
     CompletionResponse,
 )
 from llama_index.core.base.llms.types import MessageRole
+from pydantic import PrivateAttr
 
 from src.rag.components.llms.base import BaseLLM, LLMMessage
 
@@ -22,11 +23,11 @@ class LlamaIndexLLMAdapter(LlamaIndexLLM):
     适配器：将 BaseLLM 包装为 LlamaIndex 兼容的 LLM
     """
 
-    _llm: BaseLLM = None
+    _llm: BaseLLM = PrivateAttr(default=None)
 
     def __init__(self, llm: BaseLLM, **kwargs):
-        self._llm = llm
         super().__init__(**kwargs)
+        self._llm = llm
 
     @property
     def metadata(self):
