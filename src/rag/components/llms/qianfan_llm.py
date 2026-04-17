@@ -44,8 +44,15 @@ class QianfanLLM(BaseLLM):
         self.secret_key = config.get("secret_key")
         self.model_name = config.get("model", "ERNIE-Bot-4")
         self.default_temperature = config.get("temperature", 0.7)
+        self.base_url = config.get("base_url")  # 支持自定义 base_url
 
         super().__init__(config)
+
+        # 如果配置了自定义 base_url，通过环境变量设置
+        # 千帆 SDK 使用 QIANFAN_BASE_URL 环境变量
+        if self.base_url:
+            import os
+            os.environ["QIANFAN_BASE_URL"] = self.base_url
 
         self.client = qianfan.ChatCompletion(
             ak=self.api_key,

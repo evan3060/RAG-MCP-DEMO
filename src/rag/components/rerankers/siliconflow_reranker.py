@@ -15,6 +15,7 @@ class SiliconFlowReranker(BaseReranker):
     def __init__(self, config: dict):
         self.api_key = config.get("api_key")
         self.model = config.get("model", "BAAI/bge-reranker-v2-m3")
+        self.base_url = config.get("base_url", self.API_BASE)
         super().__init__(config)
 
     def _validate_config(self) -> None:
@@ -30,7 +31,7 @@ class SiliconFlowReranker(BaseReranker):
     ) -> List[RerankResult]:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.API_BASE}/rerank",
+                f"{self.base_url}/rerank",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json"

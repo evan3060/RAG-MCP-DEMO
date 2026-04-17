@@ -24,6 +24,7 @@ class SiliconFlowEmbedder(BaseEmbedder):
 
     def __init__(self, config: dict):
         self.api_key = config.get("api_key")
+        self.base_url = config.get("base_url", self.API_BASE)
         super().__init__(config)
 
     def _validate_config(self) -> None:
@@ -39,7 +40,7 @@ class SiliconFlowEmbedder(BaseEmbedder):
         """批量嵌入文本"""
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.API_BASE}/embeddings",
+                f"{self.base_url}/embeddings",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json"
