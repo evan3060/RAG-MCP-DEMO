@@ -10,7 +10,10 @@
       "Bash(python *)",
       "Bash(pip3 install *)",
       "Bash(python3 -m pytest tests/unit/test_config.py -v)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(jobs)",
+      "Bash(curl -s http://localhost:8000/api/health)",
+      "Bash(curl -s -X POST http://localhost:8000/api/ask -H 'Content-Type: application/json' -d '{\"question\": \"人工智能有哪些应用领域？\"}')"
     ]
   }
 }

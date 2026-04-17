@@ -17,10 +17,6 @@ from pathlib import Path
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# 启用嵌套事件循环（用于 LlamaIndex 同步接口）
-import nest_asyncio
-nest_asyncio.apply()
-
 # 加载环境变量
 from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent.parent / ".env"
@@ -33,19 +29,28 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.mcp_server.server import RAGMCPServer
 
+# ============ 延迟导入 RAG 组件（避免在模块加载时初始化） ============
+_mcp_server: Optional = None
 
-# 全局服务器实例
-_mcp_server: Optional[RAGMCPServer] = None
+def get_mcp_server():
+    """延迟初始化 MCP Server"""
+    global _mcp_server
+    if _mcp_server is None:
+        # 启用嵌套事件循环（必须在 LlamaIndex 导入前应用）
+        import nest_asyncio
+        nest_asyncio.apply()
+
+        from src.mcp_server.server import RAGMCPServer
+        _mcp_server = RAGMCPServer()
+    return _mcp_server
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global _mcp_server
     print("🚀 初始化 RAG MCP Server...")
-    _mcp_server = RAGMCPServer()
+    server = get_mcp_server()
     print("✅ 服务器初始化完成")
     yield
     print("🛑 服务器关闭")
@@ -154,7 +159,8 @@ async def root():
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
     """健康检查"""
-    config = _mcp_server.config
+    server = get_mcp_server()
+    config = server.config
     return HealthResponse(
         status="healthy",
         version="1.0.0",
@@ -177,7 +183,8 @@ async def ingest(request: IngestRequest):
     ```
     """
     try:
-        result_text = await _mcp_server._handle_ingest({
+        server = get_mcp_server()
+        result_text = await server._handle_ingest({
             "document_path": request.document_path,
             "recursive": request.recursive
         })
@@ -205,8 +212,9 @@ async def ask(request: AskRequest):
     ```
     """
     try:
+        server = get_mcp_server()
         # 调用 pipeline 获取结构化数据
-        pipeline_result = await _mcp_server.pipeline.ask(
+        pipeline_result = await server.pipeline.ask(
             request.question,
             request.session_id
         )
@@ -242,7 +250,8 @@ async def search(request: SearchRequest):
     ```
     """
     try:
-        results = await _mcp_server.pipeline.search(
+        server = get_mcp_server()
+        results = await server.pipeline.search(
             request.query,
             request.top_k
         )
