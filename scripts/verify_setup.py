@@ -78,11 +78,12 @@ def check_env_file():
     with open(env_file) as f:
         content = f.read()
 
-    # 检查必需的配置
+    # 检查必需的配置（新的统一命名格式）
     required_vars = [
-        "QIANFAN_API_KEY",
-        "QIANFAN_SECRET_KEY",
-        "SILICONFLOW_API_KEY",
+        "LLM_API_KEY",
+        "LLM_SECRET_KEY",
+        "EMBEDDING_API_KEY",
+        "RERANKER_API_KEY",
     ]
 
     missing = []

@@ -1,41 +1,41 @@
 # ==================== 服务配置 ====================
 server:
-  mode: stdio
+  mode: "${MCP_TRANSPORT:-stdio}"
   host: "0.0.0.0"
-  port: 8000
+  port: ${MCP_PORT:-8000}
 
 # ==================== LLM 配置 ====================
 llm:
-  provider: qianfan
+  provider: "${LLM_PROVIDER:-qianfan}"
   qianfan:
     # 千帆 API 配置
     # Coding Plan 获取地址: https://qianfan.baidubce.com/v2/coding
-    api_key: "${QIANFAN_API_KEY}"
-    secret_key: "${QIANFAN_SECRET_KEY}"
+    api_key: "${LLM_API_KEY}"
+    secret_key: "${LLM_SECRET_KEY}"
     # 可选: 自定义 base_url (Coding Plan 需要设置)
-    base_url: "${QIANFAN_BASE_URL:-https://qianfan.baidubce.com/v2}"
+    base_url: "${LLM_BASE_URL:-https://qianfan.baidubce.com/v2}"
     # 模型列表: https://console.bce.baidu.com/qianfan/modelcenter
-    model: "${QIANFAN_MODEL:-ERNIE-Bot-4}"
+    model: "${LLM_MODEL:-ERNIE-Bot-4}"
     temperature: 0.7
     max_tokens: 2048
 
 # ==================== 嵌入模型配置 ====================
 embedding:
-  provider: siliconflow
+  provider: "${EMBEDDING_PROVIDER:-siliconflow}"
   siliconflow:
     # SiliconFlow API 配置
     # 控制台: https://cloud.siliconflow.cn
-    api_key: "${SILICONFLOW_API_KEY}"
+    api_key: "${EMBEDDING_API_KEY}"
     # 可选: 自定义 base_url
-    base_url: "${SILICONFLOW_BASE_URL:-https://api.siliconflow.cn/v1}"
+    base_url: "${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}"
     # 可选: 自定义模型 (默认 BAAI/bge-large-zh-v1.5)
-    model: "${SILICONFLOW_EMBED_MODEL:-BAAI/bge-large-zh-v1.5}"
+    model: "${EMBEDDING_MODEL:-BAAI/bge-large-zh-v1.5}"
 
 # ==================== 向量数据库配置 ====================
 vector_store:
-  provider: chroma
+  provider: "${VECTOR_DB_PROVIDER:-chroma}"
   chroma:
-    persist_directory: "./data/chroma_db"
+    persist_directory: "${VECTOR_DB_PERSIST_DIR:-./data/chroma_db}"
     collection_name: "knowledge_base"
     distance_fn: "cosine"
 
@@ -51,18 +51,20 @@ retrieval:
 # ==================== 重排序配置 ====================
 reranker:
   enabled: true
+  provider: "${RERANKER_PROVIDER:-siliconflow}"
   siliconflow:
-    # SiliconFlow API 配置 (可与嵌入使用相同或不同的 key)
-    api_key: "${SILICONFLOW_API_KEY}"
+    # SiliconFlow API 配置
+    api_key: "${RERANKER_API_KEY}"
     # 可选: 自定义 base_url
-    base_url: "${SILICONFLOW_BASE_URL:-https://api.siliconflow.cn/v1}"
+    base_url: "${RERANKER_BASE_URL:-https://api.siliconflow.cn/v1}"
     # 可选: 自定义重排序模型
-    model: "${SILICONFLOW_RERANK_MODEL:-BAAI/bge-reranker-v2-m3}"
+    model: "${RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}"
     top_n: 5
 
 # ==================== 文档处理配置 ====================
 ingestion:
   supported_extensions: [".txt", ".md", ".pdf", ".docx", ".xlsx", ".xls"]
+  knowledge_base_dir: "${KNOWLEDGE_BASE_DIR:-./knowledge_base}"
   splitter:
     strategy: semantic
     semantic:
@@ -90,6 +92,6 @@ evaluation:
 
 # ==================== 日志配置 ====================
 logging:
-  level: INFO
+  level: "${LOG_LEVEL:-INFO}"
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: "./logs/rag-mcp.log"
