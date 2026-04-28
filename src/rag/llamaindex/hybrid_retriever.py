@@ -1,6 +1,6 @@
 """混合检索实现 - 结合向量检索和关键词检索"""
 
-from typing import List
+from typing import List, Optional
 from collections import defaultdict
 
 from llama_index.core import VectorStoreIndex
@@ -51,18 +51,32 @@ class HybridRetriever:
         self.top_k = top_k
         self.vector_weight = vector_weight
         self.bm25_weight = bm25_weight
-        self.bm25_retriever = self._init_bm25_retriever()
+        self._bm25_retriever: BM25Retriever = None
 
-    def _init_bm25_retriever(self) -> BM25Retriever:
-        nodes = list(self.index.docstore.docs.values())
-        return BM25Retriever.from_defaults(
-            nodes=nodes,
-            similarity_top_k=self.top_k * 2
-        )
+    def _get_bm25_retriever(self) -> Optional[BM25Retriever]:
+        """懒加载 BM25 检索器 - 首次检索时初始化"""
+        if self._bm25_retriever is None:
+            nodes = list(self.index.docstore.docs.values())
+            # 如果没有节点，返回 None（将只使用向量检索）
+            if not nodes:
+                return None
+            # BM25 要求 similarity_top_k <= 节点数量
+            top_k = min(self.top_k * 2, len(nodes))
+            self._bm25_retriever = BM25Retriever.from_defaults(
+                nodes=nodes,
+                similarity_top_k=top_k
+            )
+        return self._bm25_retriever
 
     async def aretrieve(self, query: str) -> List[NodeWithScore]:
         vector_results = await self.vector_retriever.aretrieve(query)
-        bm25_results = await self.bm25_retriever.aretrieve(query)
+
+        # 如果没有 BM25 检索器（docstore 为空），只返回向量检索结果
+        bm25_retriever = self._get_bm25_retriever()
+        if bm25_retriever is None:
+            return vector_results[:self.top_k]
+
+        bm25_results = await bm25_retriever.aretrieve(query)
 
         fused_results = rrf_fusion(
             vector_results,

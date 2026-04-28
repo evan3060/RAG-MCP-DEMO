@@ -49,18 +49,15 @@ class SiliconFlowEmbedder(BaseEmbedding):
 
     def _get_query_embedding(self, query: str) -> List[float]:
         """获取查询文本的嵌入向量"""
-        import asyncio
-        return asyncio.run(self._embed(query))
+        return self._embed_sync(query)
 
     def _get_text_embedding(self, text: str) -> List[float]:
         """获取文本的嵌入向量"""
-        import asyncio
-        return asyncio.run(self._embed(text))
+        return self._embed_sync(text)
 
     def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
         """批量获取文本的嵌入向量"""
-        import asyncio
-        return asyncio.run(self._embed_batch(texts))
+        return self._embed_batch_sync(texts)
 
     async def _aget_query_embedding(self, query: str) -> List[float]:
         """异步获取查询文本的嵌入向量"""
@@ -73,6 +70,34 @@ class SiliconFlowEmbedder(BaseEmbedding):
     async def _aget_text_embeddings(self, texts: List[str]) -> List[List[float]]:
         """异步批量获取文本的嵌入向量"""
         return await self._embed_batch(texts)
+
+    def _embed_sync(self, text: str) -> List[float]:
+        """同步嵌入单条文本"""
+        results = self._embed_batch_sync([text])
+        return results[0]
+
+    def _embed_batch_sync(self, texts: List[str]) -> List[List[float]]:
+        """同步批量嵌入文本"""
+        with httpx.Client() as client:
+            response = client.post(
+                f"{self._base_url}/embeddings",
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self._model,
+                    "input": texts,
+                    "encoding_format": "float"
+                },
+                timeout=120.0
+            )
+
+            response.raise_for_status()
+            data = response.json()
+
+            embeddings = [item["embedding"] for item in data["data"]]
+            return embeddings
 
     async def _embed(self, text: str) -> List[float]:
         """嵌入单条文本"""
@@ -93,7 +118,7 @@ class SiliconFlowEmbedder(BaseEmbedding):
                     "input": texts,
                     "encoding_format": "float"
                 },
-                timeout=60.0
+                timeout=120.0
             )
 
             response.raise_for_status()

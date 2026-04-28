@@ -11,7 +11,7 @@ from src.rag.components.loaders.base import BaseLoader
 class DocxLoader(BaseLoader):
     """Word 文档加载器 (.docx)"""
 
-    def load_data(self, file_path: Path) -> List[Document]:
+    def load_data(self, file_path: Path, extra_info: dict = None) -> List[Document]:
         from docx import Document as DocxDocument
 
         doc = DocxDocument(file_path)
@@ -49,7 +49,7 @@ class ExcelLoader(BaseLoader):
     def __init__(self, max_rows: int = 10000):
         self.max_rows = max_rows
 
-    def load_data(self, file_path: Path) -> List[Document]:
+    def load_data(self, file_path: Path, extra_info: dict = None) -> List[Document]:
         import pandas as pd
 
         xl_file = pd.ExcelFile(file_path)
@@ -84,7 +84,7 @@ class UnifiedOfficeLoader(BaseLoader):
         '.xls': ExcelLoader,
     }
 
-    def load_data(self, file_path: Path) -> List[Document]:
+    def load_data(self, file_path: Path, extra_info: dict = None) -> List[Document]:
         suffix = Path(file_path).suffix.lower()
         loader_class = self.LOADERS.get(suffix)
 

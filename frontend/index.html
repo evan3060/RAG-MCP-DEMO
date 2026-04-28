@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG 知识库问答</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        .gradient-logo {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #f472b6 100%);
+        }
+        .chat-bubble-user {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="size-full flex items-center justify-center min-h-screen p-4">
+        <!-- 主界面 -->
+        <div id="main-view" class="w-full max-w-4xl flex flex-col items-center">
+            <!-- Logo -->
+            <div class="w-20 h-20 rounded-full gradient-logo mb-8 flex items-center justify-center shadow-lg">
+                <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center">
+                    <i class="fas fa-brain text-purple-500 text-2xl"></i>
+                </div>
+            </div>
+
+            <!-- 标题 -->
+            <h1 class="text-4xl md:text-5xl font-semibold mb-3 text-gray-900 text-center">知识库问答</h1>
+            <p class="text-gray-500 mb-10 text-center">上传您的文档，AI 搜索生成回答</p>
+
+            <!-- 输入卡片 -->
+            <div class="w-full bg-white rounded-3xl shadow-lg border border-gray-200 p-6 md:p-8">
+                <textarea
+                    id="question-input"
+                    class="w-full text-gray-800 placeholder-gray-400 resize-none outline-none border-none text-lg mb-4 min-h-[100px]"
+                    placeholder="请输入你的问题..."
+                    rows="3"
+                ></textarea>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 relative">
+                        <!-- 添加文档按钮 -->
+                        <button
+                            id="add-doc-btn"
+                            class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                            title="添加文档"
+                        >
+                            <i class="fas fa-plus text-gray-600"></i>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md">
+
+                        <!-- 选择知识库按钮 -->
+                        <div class="relative">
+                            <button
+                                id="select-doc-btn"
+                                class="px-4 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                            >
+                                <span id="doc-count">选择知识库</span>
+                            </button>
+
+                            <!-- 文档列表下拉 -->
+                            <div id="doc-list" class="hidden absolute top-12 left-0 bg-white rounded-xl shadow-xl border border-gray-200 py-2 w-80 z-10 max-h-64 overflow-y-auto">
+                                <div id="doc-list-content" class="px-2">
+                                    <p class="text-gray-400 text-sm px-3 py-2">暂无文档</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 处理状态 -->
+                        <div id="processing-status" class="hidden text-sm text-gray-600 px-4">
+                            <span id="status-text"></span>
+                        </div>
+                    </div>
+
+                    <!-- 发送按钮 -->
+                    <button
+                        id="send-btn"
+                        class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-paper-plane text-white text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 快捷操作 -->
+            <div class="flex gap-3 mt-6 flex-wrap justify-center">
+                <button onclick="quickAsk('什么是人工智能？')" class="px-4 py-2 bg-white rounded-full border border-gray-200 text-sm text-gray-600 hover:border-purple-300 hover:text-purple-600 transition-colors">
+                    什么是人工智能？
+                </button>
+                <button onclick="quickAsk('总结一下文档内容')" class="px-4 py-2 bg-white rounded-full border border-gray-200 text-sm text-gray-600 hover:border-purple-300 hover:text-purple-600 transition-colors">
+                    总结一下文档内容
+                </button>
+                <button onclick="quickAsk('列出关键要点')" class="px-4 py-2 bg-white rounded-full border border-gray-200 text-sm text-gray-600 hover:border-purple-300 hover:text-purple-600 transition-colors">
+                    列出关键要点
+                </button>
+            </div>
+        </div>
+
+        <!-- 对话界面 -->
+        <div id="chat-view" class="hidden w-full max-w-4xl h-[80vh] flex flex-col bg-white rounded-3xl shadow-lg border border-gray-200">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full gradient-logo flex items-center justify-center">
+                        <i class="fas fa-brain text-white text-sm"></i>
+                    </div>
+                    <span class="font-medium text-gray-800">知识库问答</span>
+                </div>
+                <button onclick="newChat()" class="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    新对话
+                </button>
+            </div>
+
+            <!-- 消息列表 -->
+            <div id="message-list" class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+                <!-- 消息将动态添加 -->
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="p-4 border-t border-gray-100">
+                <div class="flex items-end gap-3 bg-gray-50 rounded-2xl p-3">
+                    <button onclick="document.getElementById('add-doc-btn').click()" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-500">
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                    <textarea
+                        id="chat-input"
+                        class="flex-1 bg-transparent outline-none resize-none text-gray-800 placeholder-gray-400 max-h-32"
+                        placeholder="输入消息..."
+                        rows="1"
+                    ></textarea>
+                    <button
+                        id="chat-send-btn"
+                        class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center hover:bg-purple-600 transition-colors disabled:opacity-50"
+                        disabled
+                    >
+                        <i class="fas fa-paper-plane text-white text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载动画 -->
+    <div id="loading" class="hidden fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 flex items-center gap-3 shadow-xl">
+            <div class="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-gray-700">思考中...</span>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/20" onclick="closeDeleteModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-80 z-10 border border-gray-200">
+            <h2 class="text-sm mb-4 text-gray-900">
+                是否删除知识库 <span id="delete-file-name" class="font-medium"></span>？
+            </h2>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                    取消
+                </button>
+                <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors text-sm">
+                    确认
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20260424"></script>
+</body>
+</html>

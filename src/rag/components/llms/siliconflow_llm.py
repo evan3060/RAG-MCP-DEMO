@@ -76,7 +76,7 @@ class SiliconFlowLLM(BaseLLM):
             for msg in messages
         ]
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={
@@ -88,8 +88,7 @@ class SiliconFlowLLM(BaseLLM):
                     "messages": siliconflow_messages,
                     "temperature": temperature or self.default_temperature,
                     **kwargs
-                },
-                timeout=60.0
+                }
             )
 
             response.raise_for_status()

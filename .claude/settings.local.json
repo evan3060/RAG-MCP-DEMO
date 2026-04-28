@@ -13,7 +13,14 @@
       "Bash(pip install *)",
       "Bash(jobs)",
       "Bash(curl -s http://localhost:8000/api/health)",
-      "Bash(curl -s -X POST http://localhost:8000/api/ask -H 'Content-Type: application/json' -d '{\"question\": \"人工智能有哪些应用领域？\"}')"
+      "Bash(curl -s -X POST http://localhost:8000/api/ask -H 'Content-Type: application/json' -d '{\"question\": \"人工智能有哪些应用领域？\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/search -H 'Content-Type: application/json' -d '{\"query\": \"机器学习\", \"top_k\": 2}')",
+      "Bash(pkill -f \"start_api_server\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/ingest -H 'Content-Type: application/json' -d '{\"document_path\": \"./knowledge_base\", \"recursive\": true}')",
+      "Bash(lsof -t -i:8000)",
+      "Bash(xargs kill *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/ask -H 'Content-Type: application/json' -d '{\"question\": \"什么是RAG系统？\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/search -H 'Content-Type: application/json' -d '{\"query\": \"RAG\", \"top_k\": 5}')"
     ]
   }
 }

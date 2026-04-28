@@ -11,11 +11,10 @@ llm:
     # 千帆 API 配置
     # Coding Plan 获取地址: https://qianfan.baidubce.com/v2/coding
     api_key: "${LLM_API_KEY}"
-    secret_key: "${LLM_SECRET_KEY}"
     # 可选: 自定义 base_url (Coding Plan 需要设置)
-    base_url: "${LLM_BASE_URL:-https://qianfan.baidubce.com/v2}"
-    # 模型列表: https://console.bce.baidu.com/qianfan/modelcenter
-    model: "${LLM_MODEL:-ERNIE-Bot-4}"
+    base_url: "${LLM_BASE_URL:-https://qianfan.baidubce.com/v2/coding}"
+    # 模型: deepseek-v3.2
+    model: "${LLM_MODEL:-deepseek-v3.2}"
     temperature: 0.7
     max_tokens: 2048
   siliconflow:

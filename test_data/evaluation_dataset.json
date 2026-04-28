@@ -1,0 +1,84 @@
+{
+  "test_cases": [
+    {
+      "id": "q1",
+      "question": "什么是\"三三制\"原则？",
+      "ground_truth_answer": "三三制\"是中国共产党在抗日战争时期提出的政权组织原则，指抗日民主政府中，共产党员、左派进步分子、中间分子各占三分之一。",
+      "relevant_doc_ids": ["doc_chapter4", "doc_chapter9"],
+      "relevant_keywords": ["三三制", "三分之一", "共产党员", "进步分子", "中间分子"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q2",
+      "question": "抗日战争分为哪几个阶段？",
+      "ground_truth_answer": "抗日战争分为三个阶段：第一阶段是战略防御阶段（从1937年七七事变到1938年10月广州、武汉失守），第二阶段是战略相持阶段（从1938年10月到1945年8月），第三阶段是战略反攻阶段（1945年8月以后）。",
+      "relevant_doc_ids": ["doc_chapter3", "doc_chapter6"],
+      "relevant_keywords": ["战略防御", "战略相持", "战略反攻", "1937", "1938", "广州", "武汉"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q3",
+      "question": "延安文艺座谈会讲话的核心观点是什么？",
+      "ground_truth_answer": "1942年延安文艺座谈会讲话的核心观点是：文艺必须为工农兵服务，文艺工作者必须深入群众生活，文艺作品要普及与提高相结合。",
+      "relevant_doc_ids": ["doc_chapter5"],
+      "relevant_keywords": ["延安", "文艺座谈会", "1942", "工农兵", "深入群众"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q4",
+      "question": "新民主主义经济的主要特征是什么？",
+      "ground_truth_answer": "新民主主义经济的主要特征包括：国营经济为主导，允许民族资本主义经济发展，保护民族工商业，实行\"发展生产、繁荣经济、公私兼顾、劳资两利\"的政策。",
+      "relevant_doc_ids": ["doc_chapter2", "doc_chapter7"],
+      "relevant_keywords": ["新民主主义", "国营经济", "民族资本主义", "公私兼顾", "劳资两利"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q5",
+      "question": "统一战线中如何处理与国民党的关系？",
+      "ground_truth_answer": "统一战线中处理与国民党关系的原则是：既联合又斗争，以斗争求团结。在抗日战争时期，坚持独立自主原则，对国民党的反共政策进行坚决斗争，同时保持抗日民族统一战线的完整性。",
+      "relevant_doc_ids": ["doc_chapter1", "doc_chapter8"],
+      "relevant_keywords": ["统一战线", "国民党", "既联合又斗争", "独立自主", "抗日民族统一战线"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q6",
+      "question": "整风运动的主要内容和意义是什么？",
+      "ground_truth_answer": "1942年开始的整风运动主要内容是：反对主观主义以整顿学风，反对宗派主义以整顿党风，反对党八股以整顿文风。意义在于统一了全党思想，为党的七大召开和抗战胜利奠定了思想基础。",
+      "relevant_doc_ids": ["doc_chapter5"],
+      "relevant_keywords": ["整风运动", "1942", "主观主义", "宗派主义", "党八股"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q7",
+      "question": "土地改革在解放战争时期有什么变化？",
+      "ground_truth_answer": "解放战争时期土地改革的主要变化是：从减租减息政策转变为\"耕者有其田\"政策。1946年《五四指示》和1947年《中国土地法大纲》确立了没收地主土地分配给农民的原则。",
+      "relevant_doc_ids": ["doc_chapter10"],
+      "relevant_keywords": ["土地改革", "耕者有其田", "五四指示", "土地法大纲", "1946", "1947"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q8",
+      "question": "毛泽东在哪篇文章中提出\"枪杆子里出政权\"？",
+      "ground_truth_answer": "\"枪杆子里出政权\"的著名论断是毛泽东在1927年8月7日八七会议上提出的，强调武装斗争的重要性。",
+      "relevant_doc_ids": ["doc_chapter3"],
+      "relevant_keywords": ["枪杆子里出政权", "八七会议", "1927", "武装斗争"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q9",
+      "question": "党的三大优良作风是什么？",
+      "ground_truth_answer": "党的三大优良作风是：理论联系实际的作风、密切联系群众的作风、批评与自我批评的作风。这是毛泽东在党的七大上总结提出的。",
+      "relevant_doc_ids": ["doc_chapter9"],
+      "relevant_keywords": ["三大作风", "理论联系实际", "密切联系群众", "批评与自我批评", "七大"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q10",
+      "question": "为什么中国革命必须走农村包围城市的道路？",
+      "ground_truth_answer": "中国革命必须走农村包围城市道路的原因是：中国是半殖民地半封建社会，城市被反动势力控制，农村是薄弱环节；农民占人口绝大多数，是革命主力军；农村可以建立根据地，积累力量，最后夺取城市。",
+      "relevant_doc_ids": ["doc_chapter3", "doc_chapter6"],
+      "relevant_keywords": ["农村包围城市", "半殖民地", "半封建", "根据地", "农民"],
+      "difficulty": "hard"
+    }
+  ]
+}
