@@ -1,4 +1,3 @@
 #!/bin/bash
-cd /home/evan/projects/RAG-MCP-DEMO
-source venv/bin/activate
-exec uvicorn src.api.server:app --host 192.168.0.15 --port 8000
+cd "$(dirname "$0")"
+exec python3 -m uvicorn src.api.server:app --host 0.0.0.0 --port 8000
