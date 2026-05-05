@@ -11,19 +11,19 @@ class TestSmartTextProcessor:
         """测试默认初始化"""
         processor = SmartTextProcessor()
         assert processor.doc_type == 'auto'
-        assert processor.chunk_size == (200, 500)
+        assert processor.chunk_size == (200, 600)
 
     def test_initialization_general(self):
         """测试通用文档类型初始化"""
         processor = SmartTextProcessor(doc_type='general')
         assert processor.doc_type == 'general'
-        assert processor.chunk_size == (200, 500)
+        assert processor.chunk_size == (200, 600)
 
     def test_initialization_technical(self):
         """测试技术文档类型初始化"""
         processor = SmartTextProcessor(doc_type='technical')
         assert processor.doc_type == 'technical'
-        assert processor.chunk_size == (500, 800)
+        assert processor.chunk_size == (300, 800)
 
     def test_basic_clean_remove_control_chars(self):
         """测试移除控制字符"""
@@ -186,7 +186,7 @@ class TestSmartTextProcessor:
     def test_overlap_ratio(self):
         """测试重叠率"""
         processor = SmartTextProcessor()
-        assert processor.OVERLAP_RATIO == 0.15
+        assert processor.OVERLAP_RATIO == 0.125
 
     def test_calculate_overlap(self):
         """测试重叠计算"""

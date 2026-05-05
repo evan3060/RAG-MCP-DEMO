@@ -39,12 +39,13 @@ class SmartTextProcessor:
     4. 智能分块：以段落为最小单位，支持不同文档类型的块大小
     """
 
-    # 通用文档：200-500字；专业文档：500-800字
     CHUNK_SIZES = {
-        'general': (200, 500),      # (min, max) 字数
-        'technical': (500, 800),
+        'general': (200, 600),
+        'technical': (300, 800),
     }
-    OVERLAP_RATIO = 0.15  # 15% 重叠率
+    OVERLAP_RATIO = 0.125  # 50/400 = 12.5%
+    TARGET_CHUNK_SIZE = 400
+    OVERLAP_SIZE = 50  # 15% 重叠率
 
     # 文档类型检测关键字
     TECHNICAL_KEYWORDS = [
@@ -142,6 +143,16 @@ class SmartTextProcessor:
 
         return blocks
 
+    def _split_sentences(self, text: str) -> List[str]:
+        """将段落文本按句子边界分割（句号优先）"""
+        sentences = re.split(r'(?<=[。])', text)
+        result = []
+        for s in sentences:
+            s = s.strip()
+            if s:
+                result.append(s)
+        return result
+
     def _detect_block_type(self, text: str) -> str:
         """检测块类型"""
         # 代码块检测
@@ -180,39 +191,40 @@ class SmartTextProcessor:
             block_len = len(block_text)
             block_type = block['type']
 
-            # 结构性块（标题、代码、表格）单独处理
             if block['is_structural']:
-                # 如果当前块已有内容，先保存
+                if current_chunk:
+                    nodes.append(self._create_node(current_chunk, metadata))
+                    current_chunk = []
+                    current_size = 0
+                nodes.append(self._create_node([block], metadata, is_structural=True))
+                continue
+
+            if block_len <= max_size:
+                if current_size + block_len > max_size and current_size >= min_size:
+                    nodes.append(self._create_node(current_chunk, metadata))
+                    overlap_blocks = self._calculate_overlap(current_chunk)
+                    current_chunk = overlap_blocks + [block]
+                    current_size = sum(len(b['content']) for b in current_chunk)
+                else:
+                    current_chunk.append(block)
+                    current_size += block_len
+            else:
                 if current_chunk:
                     nodes.append(self._create_node(current_chunk, metadata))
                     current_chunk = []
                     current_size = 0
 
-                # 结构性块单独作为一个节点（不拆分）
-                nodes.append(self._create_node([block], metadata, is_structural=True))
-                continue
+                sentences = self._split_sentences(block_text)
+                for sent in sentences:
+                    sent_len = len(sent)
+                    if current_size + sent_len > max_size and current_size >= min_size:
+                        nodes.append(self._create_node(current_chunk, metadata))
+                        overlap_blocks = self._calculate_overlap(current_chunk)
+                        current_chunk = overlap_blocks
+                        current_size = sum(len(b['content']) for b in current_chunk)
+                    current_chunk.append({'type': block_type, 'content': sent, 'is_structural': False})
+                    current_size += sent_len
 
-            # 检查是否超出最大大小
-            if current_size + block_len > max_size and current_size >= min_size:
-                # 保存当前块
-                nodes.append(self._create_node(current_chunk, metadata))
-
-                # 应用重叠：保留上一块的结尾部分内容
-                overlap_blocks = self._calculate_overlap(current_chunk)
-                current_chunk = overlap_blocks + [block]
-                current_size = sum(len(b['content']) for b in current_chunk)
-            else:
-                current_chunk.append(block)
-                current_size += block_len
-
-            # 标题与正文绑定（如果下一个是正文，保留在当前块）
-            if block_type == 'heading' and i + 1 < len(blocks):
-                next_block = blocks[i + 1]
-                if next_block['type'] == 'paragraph' and current_size + len(next_block['content']) <= max_size:
-                    # 等待下一次循环自动添加
-                    pass
-
-        # 保存最后一个块
         if current_chunk:
             nodes.append(self._create_node(current_chunk, metadata))
 
@@ -424,6 +436,95 @@ class RAGPipeline:
         print(f"✅ 索引构建完成：共 {len(all_nodes)} 个节点，文档类型：{processor.doc_type}")
         return self.index
 
+    def add_files_to_index(self, file_paths: list[str]) -> int:
+        """增量添加文件到索引（只处理指定文件）"""
+        import chromadb
+        from src.rag.components.loaders.pdf_loader import PDFLoader
+        from src.rag.components.loaders.office_loader import DocxLoader, ExcelLoader
+
+        file_extractor = {
+            ".pdf": PDFLoader(),
+            ".docx": DocxLoader(),
+            ".xlsx": ExcelLoader(),
+            ".xls": ExcelLoader(),
+        }
+
+        all_nodes = []
+        processor = SmartTextProcessor(doc_type='auto')
+
+        for file_path in file_paths:
+            path = Path(file_path)
+            if not path.exists():
+                print(f"⚠️ 文件不存在: {file_path}")
+                continue
+
+            ext = path.suffix.lower()
+            if ext in file_extractor:
+                loader = file_extractor[ext]
+                docs = loader.load_data(file_path)
+            elif ext in ['.txt', '.md']:
+                from llama_index.core import Document
+                try:
+                    text = path.read_text(encoding='utf-8')
+                except UnicodeDecodeError:
+                    text = path.read_text(encoding='gbk', errors='ignore')
+                docs = [Document(text=text, metadata={"file_name": path.name, "file_type": ext})]
+            else:
+                print(f"⚠️ 不支持的文件类型: {ext}")
+                continue
+
+            for doc in docs:
+                file_name = doc.metadata.get('file_name', path.name)
+                is_technical = any(ext in file_name.lower() for ext in [
+                    '.py', '.js', '.java', '.cpp', '.go', '.rs',
+                    '.md', '.rst', '.api', '.proto', '.yaml', '.yml', '.json'
+                ])
+                processor.doc_type = 'technical' if is_technical else 'general'
+                processor.chunk_size = processor.CHUNK_SIZES.get(processor.doc_type, processor.CHUNK_SIZES['general'])
+
+                nodes = processor.process(doc.text, metadata={
+                    'file_name': file_name,
+                    'file_type': ext,
+                    'source': str(path),
+                })
+                all_nodes.extend(nodes)
+
+        if not all_nodes:
+            return 0
+
+        if self.index is None:
+            return self._create_index_with_nodes(all_nodes)
+
+        self.index.insert_nodes(all_nodes)
+        print(f"✅ 增量添加完成：新增 {len(all_nodes)} 个节点")
+        return len(all_nodes)
+
+    def _create_index_with_nodes(self, nodes: list) -> int:
+        """用节点列表创建新索引"""
+        import chromadb
+
+        persist_dir = "./data/chroma_db"
+        Path(persist_dir).mkdir(parents=True, exist_ok=True)
+
+        chroma_client = chromadb.PersistentClient(path=persist_dir)
+        collection = chroma_client.get_or_create_collection("knowledge_base")
+        vector_store = LlamaIndexChromaStore(chroma_collection=collection)
+
+        docstore = SimpleDocumentStore()
+        docstore.add_documents(nodes)
+
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store,
+            docstore=docstore
+        )
+
+        self.index = VectorStoreIndex(
+            nodes=nodes,
+            storage_context=storage_context
+        )
+        print(f"✅ 新索引创建完成：共 {len(nodes)} 个节点")
+        return len(nodes)
+
     async def ask(self, question: str, session_id: Optional[str] = None, selected_files: Optional[List[str]] = None) -> Dict[str, Any]:
         """智能问答
 
@@ -434,14 +535,6 @@ class RAGPipeline:
         """
         if not self.index:
             raise ValueError("索引未构建，请先调用 build_index()")
-
-        # 如果用户明确选择了空列表（未选择任何知识库），直接返回提示
-        if selected_files is not None and len(selected_files) == 0:
-            return {
-                "answer": "请先选择知识库文档后再提问。",
-                "sources": [],
-                "session_id": session_id or "new_session"
-            }
 
         vector_retriever = VectorIndexRetriever(
             index=self.index,
@@ -474,43 +567,19 @@ class RAGPipeline:
             system_prompt=system_prompt
         )
 
-        # 获取检索结果 - 直接使用检索内容，不经过 LLM 生成
-        vector_results = await vector_retriever.aretrieve(question)
-        
-        # 直接从检索结果中提取相关内容作为答案
-        if vector_results and len(vector_results) > 0:
-            # 取最相关的几个检索结果拼接作为答案
-            answer_parts = []
-            for node in vector_results[:3]:
-                text = node.node.text.strip()
-                if text and len(text) > 10:
-                    answer_parts.append(text)
-            answer = "\n\n".join(answer_parts)
-        else:
-            # 如果没有检索结果，生成一个提示
-            answer = "未找到相关内容"
-
-        # 不再过滤，因为检索结果不包含思考过程
-        # answer = self._filter_thinking_process(answer)
-
-        # 使用向量检索获取真实的相似度分数
         vector_results = await vector_retriever.aretrieve(question)
 
-        # 去重：基于内容哈希
+        import hashlib
         seen_hashes = set()
         sources = []
 
         for node in vector_results:
-            # 获取文件名称
             file_name = node.node.metadata.get('file_name', '')
 
-            # 如果指定了 selected_files，过滤只保留选中的文件
             if selected_files and file_name not in selected_files:
                 continue
 
-            # 内容去重：基于前200字符的哈希
             content_preview = node.node.text[:200].strip()
-            import hashlib
             content_hash = hashlib.md5(content_preview.encode()).hexdigest()
 
             if content_hash in seen_hashes:
@@ -523,9 +592,13 @@ class RAGPipeline:
                 "metadata": node.node.metadata
             })
 
-            # 最多返回10个不同来源
             if len(sources) >= 10:
                 break
+
+        if sources:
+            answer = "\n\n".join(s["content"] for s in sources[:5])
+        else:
+            answer = "未找到相关内容"
 
         return {
             "answer": answer,

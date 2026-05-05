@@ -78,26 +78,33 @@ class SiliconFlowEmbedder(BaseEmbedding):
 
     def _embed_batch_sync(self, texts: List[str]) -> List[List[float]]:
         """同步批量嵌入文本"""
-        with httpx.Client() as client:
-            response = client.post(
-                f"{self._base_url}/embeddings",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self._model,
-                    "input": texts,
-                    "encoding_format": "float"
-                },
-                timeout=120.0
-            )
+        all_embeddings = []
+        batch_size = 20
 
-            response.raise_for_status()
-            data = response.json()
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            with httpx.Client() as client:
+                response = client.post(
+                    f"{self._base_url}/embeddings",
+                    headers={
+                        "Authorization": f"Bearer {self._api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self._model,
+                        "input": batch,
+                        "encoding_format": "float"
+                    },
+                    timeout=120.0
+                )
 
-            embeddings = [item["embedding"] for item in data["data"]]
-            return embeddings
+                response.raise_for_status()
+                data = response.json()
+
+                embeddings = [item["embedding"] for item in data["data"]]
+                all_embeddings.extend(embeddings)
+
+        return all_embeddings
 
     async def _embed(self, text: str) -> List[float]:
         """嵌入单条文本"""
@@ -106,23 +113,30 @@ class SiliconFlowEmbedder(BaseEmbedding):
 
     async def _embed_batch(self, texts: List[str]) -> List[List[float]]:
         """批量嵌入文本"""
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self._base_url}/embeddings",
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self._model,
-                    "input": texts,
-                    "encoding_format": "float"
-                },
-                timeout=120.0
-            )
+        all_embeddings = []
+        batch_size = 20
 
-            response.raise_for_status()
-            data = response.json()
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self._base_url}/embeddings",
+                    headers={
+                        "Authorization": f"Bearer {self._api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self._model,
+                        "input": batch,
+                        "encoding_format": "float"
+                    },
+                    timeout=120.0
+                )
 
-            embeddings = [item["embedding"] for item in data["data"]]
-            return embeddings
+                response.raise_for_status()
+                data = response.json()
+
+                embeddings = [item["embedding"] for item in data["data"]]
+                all_embeddings.extend(embeddings)
+
+        return all_embeddings

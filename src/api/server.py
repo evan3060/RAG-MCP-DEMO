@@ -29,7 +29,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 import shutil
 import os
@@ -178,9 +178,15 @@ async def health():
     document_count = 0
     if has_index:
         try:
-            # 尝试获取文档数量
-            docstore = server.pipeline.index.docstore
-            document_count = len(docstore.docs) if docstore else 0
+            import chromadb
+            persist_dir = "./data/chroma_db"
+            chroma_client = chromadb.PersistentClient(path=persist_dir)
+            collections = chroma_client.list_collections()
+            for c in collections:
+                if c.name == "knowledge_base":
+                    collection = chroma_client.get_collection("knowledge_base")
+                    document_count = collection.count()
+                    break
         except:
             pass
 
@@ -231,32 +237,33 @@ async def upload_files(files: list[UploadFile] = File(...)):
     支持格式: PDF, DOCX, XLSX, TXT, MD
     """
     try:
-        print(f"[DEBUG] upload_files called, files count: {len(files)}")
         kb_path = Path("./knowledge_base")
         kb_path.mkdir(parents=True, exist_ok=True)
 
         uploaded_files = []
+        file_paths = []
         for file in files:
-            # 保存文件
             file_path = kb_path / file.filename
             with open(file_path, "wb") as f:
                 shutil.copyfileobj(file.file, f)
             uploaded_files.append(file.filename)
-            print(f"[DEBUG] Saved file: {file.filename}")
+            file_paths.append(str(file_path))
 
-        # 重新构建索引（在线程池中运行同步操作）
-        print(f"[DEBUG] Starting build_index...")
         server = get_mcp_server()
-        await asyncio.to_thread(server.pipeline.build_index, str(kb_path))
-        print(f"[DEBUG] build_index completed")
+        node_count = await asyncio.to_thread(server.pipeline.add_files_to_index, file_paths)
 
         return {
             "success": True,
-            "message": f"✅ 成功上传 {len(uploaded_files)} 个文件",
+            "message": f"✅ 成功上传 {len(uploaded_files)} 个文件，新增 {node_count} 个节点",
             "files": uploaded_files
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
 
 
 @app.post("/api/ask", response_model=AskResponse)
