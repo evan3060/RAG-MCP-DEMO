@@ -27,6 +27,8 @@ logs/
 *.log
 .env
 .env.local
+chunks_preview.json
+chunks_preview.md
 
 # Testing
 .pytest_cache/
