@@ -5,8 +5,12 @@ from typing import List, Dict, Any
 import httpx
 
 from src.rag.components.rerankers.base import BaseReranker, RerankResult
+from src.utils.registry import Registry
 
 
+@Registry.register("reranker", "siliconflow")
+@Registry.register("reranker", "openai")
+@Registry.register("reranker", "myapi")
 class SiliconFlowReranker(BaseReranker):
     """SiliconFlow 重排序实现"""
 

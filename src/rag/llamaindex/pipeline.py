@@ -21,10 +21,8 @@ from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.vector_stores.chroma import ChromaVectorStore as LlamaIndexChromaStore
 
-from src.rag.components.embedders.siliconflow_embedder import SiliconFlowEmbedder
-from src.rag.components.rerankers.siliconflow_reranker import SiliconFlowReranker
-from src.rag.components.llms.siliconflow_llm import SiliconFlowLLM
-from src.rag.components.llms.openai_compatible_llm import OpenAICompatibleLLM
+from src.rag.components.factory import create_llm, create_embedder, create_reranker
+from src.rag.components import *
 from src.rag.components.llms.llama_index_adapter import LlamaIndexLLMAdapter
 from src.rag.llamaindex.hybrid_retriever import HybridRetriever
 
@@ -308,57 +306,12 @@ class RAGPipeline:
         embedding_config = self.config.get("embedding", {})
         embed_provider = embedding_config.get("provider", "siliconflow")
 
-        # 配置嵌入模型 (直接继承 BaseEmbedding)
-        if embed_provider == "siliconflow":
-            sf_config = embedding_config.get("siliconflow", {})
-            Settings.embed_model = SiliconFlowEmbedder({
-                "api_key": sf_config.get("api_key"),
-                "model": sf_config.get("model", "BAAI/bge-large-zh-v1.5"),
-                "base_url": sf_config.get("base_url")
-            })
-        elif embed_provider == "litellm":
-            # litellm 使用 OpenAI 兼容接口，直接用 SiliconFlowEmbedder
-            lt_config = embedding_config.get("litellm", {})
-            Settings.embed_model = SiliconFlowEmbedder({
-                "api_key": lt_config.get("api_key"),
-                "model": lt_config.get("model", "BAAI/bge-m3"),
-                "base_url": lt_config.get("base_url", "").rstrip("/") + "/v1"
-            })
+        # 配置嵌入模型
+        Settings.embed_model = create_embedder(embedding_config)
 
         # 配置 LLM
-        if llm_provider == "siliconflow":
-            sf_config = llm_config.get("siliconflow", {})
-            llm = SiliconFlowLLM({
-                "api_key": sf_config.get("api_key"),
-                "model": sf_config.get("model", "deepseek-ai/DeepSeek-V3"),
-                "base_url": sf_config.get("base_url"),
-                "temperature": sf_config.get("temperature", 0.7)
-            })
-            Settings.llm = LlamaIndexLLMAdapter(llm)
-        elif llm_provider == "qianfan":
-            # 千帆 Coding 使用 OpenAI 兼容接口
-            qf_config = llm_config.get("qianfan", {})
-            llm = OpenAICompatibleLLM({
-                "api_key": qf_config.get("api_key"),
-                "model": qf_config.get("model", "deepseek-v3.2"),
-                "base_url": qf_config.get("base_url", "https://qianfan.baidubce.com/v2/coding"),
-                "temperature": qf_config.get("temperature", 0.7)
-            })
-            Settings.llm = LlamaIndexLLMAdapter(llm)
-        elif llm_provider == "litellm":
-            # litellm 使用 OpenAI 兼容接口
-            lt_config = llm_config.get("litellm", {})
-            model = lt_config.get("model", "gpt-3.5-turbo")
-            # litellm 模型名不需要 openai/ 前缀
-            if model.startswith("openai/"):
-                model = model[7:]
-            llm = OpenAICompatibleLLM({
-                "api_key": lt_config.get("api_key"),
-                "model": model,
-                "base_url": lt_config.get("base_url"),
-                "temperature": lt_config.get("temperature", 0.7)
-            })
-            Settings.llm = LlamaIndexLLMAdapter(llm)
+        llm = create_llm(llm_config)
+        Settings.llm = LlamaIndexLLMAdapter(llm)
 
     def build_index(self, documents_path: str) -> VectorStoreIndex:
         """构建知识库索引（支持 Chroma 持久化，支持 PDF/Word/Excel/TXT）"""

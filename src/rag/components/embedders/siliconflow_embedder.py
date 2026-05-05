@@ -16,7 +16,12 @@ import httpx
 from llama_index.core.embeddings import BaseEmbedding
 from pydantic import PrivateAttr
 
+from src.utils.registry import Registry
 
+
+@Registry.register("embedder", "siliconflow")
+@Registry.register("embedder", "openai")
+@Registry.register("embedder", "myapi")
 class SiliconFlowEmbedder(BaseEmbedding):
     """
     SiliconFlow 嵌入模型实现

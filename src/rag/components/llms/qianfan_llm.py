@@ -12,8 +12,10 @@ from typing import List, Optional
 import qianfan
 
 from src.rag.components.llms.base import BaseLLM, LLMMessage, LLMResponse
+from src.utils.registry import Registry
 
 
+@Registry.register("llm", "qianfan")
 class QianfanLLM(BaseLLM):
     """
     千帆 LLM 实现

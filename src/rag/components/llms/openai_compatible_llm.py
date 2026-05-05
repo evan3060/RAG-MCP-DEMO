@@ -9,8 +9,12 @@ from typing import List, Optional
 from openai import AsyncOpenAI
 
 from src.rag.components.llms.base import BaseLLM, LLMMessage, LLMResponse
+from src.utils.registry import Registry
 
 
+@Registry.register("llm", "openai")
+@Registry.register("llm", "siliconflow")
+@Registry.register("llm", "myapi")
 class OpenAICompatibleLLM(BaseLLM):
     """
     OpenAI 兼容接口 LLM 实现

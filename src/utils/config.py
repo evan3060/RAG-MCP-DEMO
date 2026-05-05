@@ -12,6 +12,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import yaml
+from dotenv import load_dotenv
+
+
+def _load_env_file():
+    """加载 .env 文件"""
+    env_path = Path(".env")
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
 
 
 def _expand_env_vars(value: Any) -> Any:
@@ -103,6 +111,9 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     【返回】
         配置字典，环境变量已展开
     """
+    # 加载 .env 文件
+    _load_env_file()
+    
     # 首先尝试从环境变量加载
     env_config = _load_from_env()
     
