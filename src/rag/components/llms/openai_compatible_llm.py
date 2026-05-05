@@ -1,12 +1,13 @@
 """
-OpenAI 兼容接口 LLM 实现
+OpenAI 兼容接口 LLM 实现（使用自定义HTTP客户端）
 
 支持：千帆 Coding 等 OpenAI 兼容 API
 """
 
 from typing import List, Optional
+import json
 
-from openai import AsyncOpenAI
+import httpx
 
 from src.rag.components.llms.base import BaseLLM, LLMMessage, LLMResponse
 from src.utils.registry import Registry
@@ -17,25 +18,9 @@ from src.utils.registry import Registry
 @Registry.register("llm", "myapi")
 class OpenAICompatibleLLM(BaseLLM):
     """
-    OpenAI 兼容接口 LLM 实现
-
-    【支持的模型】
-    - 千帆 Coding: kimi-k2.5, ernie-bot 等
-    - 任何 OpenAI 兼容接口
-
-    【使用示例】
-    ```python
-    llm = OpenAICompatibleLLM({
-        "api_key": "your-key",
-        "model": "kimi-k2.5",
-        "base_url": "https://qianfan.baidubce.com/v2/coding",
-        "temperature": 0.7
-    })
-
-    response = await llm.generate([
-        LLMMessage(role="user", content="你好")
-    ])
-    ```
+    OpenAI 兼容接口 LLM 实现（使用自定义HTTP客户端）
+    
+    处理非标准API响应格式
     """
 
     def __init__(self, config: dict):
@@ -43,16 +28,9 @@ class OpenAICompatibleLLM(BaseLLM):
         self.api_key = config.get("api_key")
         self.model_name = config.get("model", "gpt-3.5-turbo")
         self.default_temperature = config.get("temperature", 0.7)
-        self.base_url = config.get("base_url")  # OpenAI 兼容接口的 base_url
+        self.base_url = config.get("base_url", "https://api.openai.com/v1")
 
         super().__init__(config)
-
-        # 初始化 OpenAI 客户端
-        client_kwargs = {"api_key": self.api_key}
-        if self.base_url:
-            client_kwargs["base_url"] = self.base_url
-
-        self.client = AsyncOpenAI(**client_kwargs)
 
     def _validate_config(self) -> None:
         """验证配置"""
@@ -73,19 +51,35 @@ class OpenAICompatibleLLM(BaseLLM):
             for msg in messages
         ]
 
-        response = await self.client.chat.completions.create(
-            model=self.model_name,
-            messages=openai_messages,
-            temperature=temperature or self.default_temperature,
-            **kwargs
-        )
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{self.base_url}/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": self.model_name,
+                    "messages": openai_messages,
+                    "temperature": temperature or self.default_temperature,
+                    **kwargs
+                }
+            )
 
-        return LLMResponse(
-            content=response.choices[0].message.content,
-            usage={
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens
-            },
-            model=self.model_name
-        )
+            response.raise_for_status()
+            
+            # 处理响应前面的空白字符
+            text = response.text.strip()
+            data = json.loads(text)
+
+            # 提取回答内容
+            content = data["choices"][0]["message"]["content"]
+            
+            # 提取使用量信息（如果有）
+            usage = data.get("usage", {})
+
+            return LLMResponse(
+                content=content,
+                usage=usage,
+                model=self.model_name
+            )

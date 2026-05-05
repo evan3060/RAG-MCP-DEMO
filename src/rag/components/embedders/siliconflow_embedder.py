@@ -10,6 +10,7 @@ SiliconFlow 嵌入模型实现 - LlamaIndex BaseEmbedding 子类
 https://docs.siliconflow.cn/api-reference/embeddings/create-embeddings
 """
 
+import json
 from typing import List
 
 import httpx
@@ -88,9 +89,11 @@ class SiliconFlowEmbedder(BaseEmbedding):
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            with httpx.Client() as client:
+            with httpx.Client(timeout=120.0) as client:
+                # 确保 base_url 正确拼接
+                base_url = self._base_url.rstrip('/')
                 response = client.post(
-                    f"{self._base_url}/embeddings",
+                    f"{base_url}/v1/embeddings",
                     headers={
                         "Authorization": f"Bearer {self._api_key}",
                         "Content-Type": "application/json"
@@ -99,12 +102,13 @@ class SiliconFlowEmbedder(BaseEmbedding):
                         "model": self._model,
                         "input": batch,
                         "encoding_format": "float"
-                    },
-                    timeout=120.0
+                    }
                 )
 
                 response.raise_for_status()
-                data = response.json()
+                # 处理响应前面的空白字符
+                text = response.text.strip()
+                data = json.loads(text)
 
                 embeddings = [item["embedding"] for item in data["data"]]
                 all_embeddings.extend(embeddings)
@@ -123,9 +127,11 @@ class SiliconFlowEmbedder(BaseEmbedding):
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # 确保 base_url 正确拼接
+                base_url = self._base_url.rstrip('/')
                 response = await client.post(
-                    f"{self._base_url}/embeddings",
+                    f"{base_url}/v1/embeddings",
                     headers={
                         "Authorization": f"Bearer {self._api_key}",
                         "Content-Type": "application/json"
@@ -134,12 +140,13 @@ class SiliconFlowEmbedder(BaseEmbedding):
                         "model": self._model,
                         "input": batch,
                         "encoding_format": "float"
-                    },
-                    timeout=120.0
+                    }
                 )
 
                 response.raise_for_status()
-                data = response.json()
+                # 处理响应前面的空白字符
+                text = response.text.strip()
+                data = json.loads(text)
 
                 embeddings = [item["embedding"] for item in data["data"]]
                 all_embeddings.extend(embeddings)

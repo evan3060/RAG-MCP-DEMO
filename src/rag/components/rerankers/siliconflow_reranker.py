@@ -3,6 +3,7 @@
 from typing import List, Dict, Any
 
 import httpx
+import json
 
 from src.rag.components.rerankers.base import BaseReranker, RerankResult
 from src.utils.registry import Registry
@@ -33,9 +34,11 @@ class SiliconFlowReranker(BaseReranker):
         doc_ids: List[str],
         metadatas: List[Dict[str, Any]]
     ) -> List[RerankResult]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # 确保 base_url 正确拼接
+            base_url = self.base_url.rstrip('/')
             response = await client.post(
-                f"{self.base_url}/rerank",
+                f"{base_url}/v1/rerank",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json"
@@ -49,7 +52,9 @@ class SiliconFlowReranker(BaseReranker):
             )
 
             response.raise_for_status()
-            data = response.json()
+            # 处理响应前面的空白字符
+            text = response.text.strip()
+            data = json.loads(text)
 
             results = []
             for item in data.get("results", []):
