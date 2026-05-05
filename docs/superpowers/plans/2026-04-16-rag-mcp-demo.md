@@ -554,7 +554,6 @@ class Registry:
 - [ ] **Step 5: Run tests**
 
 ```bash
-cd /home/evan/myproject/RAG-MCP-DEMO
 python -m pytest tests/unit/test_config.py -v
 ```
 
