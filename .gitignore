@@ -8,18 +8,35 @@ venv/
 env/
 ENV/
 .venv
+env.bak/
+venv.bak/
 
 # Distribution / packaging
 build/
 dist/
 *.egg-info/
+*.egg
+.eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
 
-# IDEs
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
+
+# AI assistants
+.claude/
+.opencode/
+.cursor/
+.aider*
 
 # Project specific
 data/chroma_db/
@@ -27,14 +44,67 @@ logs/
 *.log
 .env
 .env.local
+.env.*.local
 chunks_preview.json
 chunks_preview.md
+knowledge_base/
+test_data/
+
+# OpenSpec
+openspec/
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Cython
+.cython/
+cython_debug/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Documentation builds
+docs/_build/
+site/
+
+# Frontend (if not used)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+
+# Misc
+*.log
+*.pot
+*.pyc
+local_settings.py
